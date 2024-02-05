@@ -54,12 +54,3 @@ Category
 </div>
 <?= $this->endSection(); ?>
 
-
-bikin tabel baru nama = 
-tests
-- id
-- name
-- jabatan (staff, direktur)
-
-di buat crud-nya
-bikin migrasi => model => controller => route => view
