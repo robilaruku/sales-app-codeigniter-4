@@ -14,6 +14,28 @@ Product
                 </a>
             </div>
             <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="category_id" class="form-label">Category</label>
+                            <select name="category_id" id="category_id" class="form-select">
+                                <option value>All Category</option>
+                                <?php foreach ($categories as $category): ?>
+                                    <option value="<?= $category['id']; ?>" <?= ($category_id == $category['id']) ? 'selected' : null ?>>
+                                        <?= $category['name']; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" name="search" id="search" class="form-control"
+                                placeholder="Enter keyword" value="<?= $search ?? null ?>">
+                        </div>
+                    </div>
+                </div>
                 <?php if (session()->get('message')):
                     ; ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -34,7 +56,7 @@ Product
                 <?php endif; ?>
                 <div class="row">
                     <div class="col-md-12">
-                        <table class="table table-hover">
+                        <table class="table table-hover table-bordered table-condensed table-responsive">
                             <thead class="table-success">
                                 <tr class="text-center">
                                     <th>No</th>
@@ -62,7 +84,8 @@ Product
                                             <?= $product['name']; ?>
                                         </td>
                                         <td>
-                                            <?= $product['price']; ?>
+                                            Rp.
+                                            <?= number_format($product['price'], 0, ',', '.'); ?>
                                         </td>
                                         <td>
                                             <?= $product['sku']; ?>
@@ -98,9 +121,32 @@ Product
                         </table>
                     </div>
                 </div>
+                <?= $pager->links('default', 'pagination_link'); ?>
             </div>
         </div>
     </div>
 </div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        function filter() {
+            var category_id = $('#category_id').val();
+            var search = $('#search').val();
+            var base_url = '<?= base_url('admin/product') ?>';
+            var url = base_url + '?category_id=' + category_id + '&search=' + search;
 
+            window.location.replace(url);
+        }
+
+        $('#category_id').on('change', function () {
+            filter();
+        });
+
+        $('#search').keypress(function (event) {
+            if (event.keyCode == 13) {
+                filter();
+            }
+        });
+    });
+</script>
 <?= $this->endSection(); ?>

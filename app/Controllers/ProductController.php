@@ -23,27 +23,53 @@ class ProductController extends ResourceController
      */
     public function index()
     {
+        // Variabel $perPage untuk setting banyak data per halaman
+        $perPage = 5;
+
+        /**
+         * Ambil nilai search dan filter product
+         * dari method GET untuk filter data tampil
+         */
+        $search = $this->request->getVar('search');
+        $category_id = $this->request->getVar('category_id');
+
+        /**
+         * Ambil semua data tabel products dan join tabel categories
+         * untuk mendapatkan category_name tabel categories
+         * berdasarkan category_id tabel products
+         */
         $productModel = $this->productModel;
         $productModel->select('products.*, c.name category_name');
         $productModel->join('categories c', 'products.category_id = c.id');
 
-        $products = $productModel->findAll();
+        /**
+         * Menerapkan filter dan search pada query builder
+         * jika terdapat nilai $search dan $filter
+         */
+        if (!empty($category_id)) {
+            $productModel->where('products.category_id', $category_id);
+        }
+        if (!empty($search)) {
+            $productModel->like('products.name', $search, 'both');
+        }
+
+        $products = $productModel->paginate($perPage);
+        $pager = $productModel->pager;
+
+        // Ambil semua data table categories
+        $categoryModel = new \App\Models\CategoryModel();
+        $categories = $categoryModel->findAll();
 
         $data = [
-            'products' => $products
+            'products' => $products,
+            'pager' => $pager,
+            'categories' => $categories,
+            'category_id' => $category_id,
+            'search' => $search
         ];
 
-        return view('admin/product/index', $data);
-    }
 
-    /**
-     * Return the properties of a resource object
-     *
-     * @return ResponseInterface
-     */
-    public function show($id = null)
-    {
-        //
+        return view('admin/product/index', $data);
     }
 
     /**
@@ -64,10 +90,22 @@ class ProductController extends ResourceController
         ]);
     }
 
+    public function show($id = null)
+    {
+        $builder = $this->productModel->builder();
+        $builder->select('products.*, c.name category_name');
+        $builder->join('categories c', 'products.category_id = c.id');
+        $builder->where('products.id', $id);
+        $product = $builder->get();
+        $product = $product->getRowArray();
+
+        return view('admin/product/show', ['product' => $product]);
+    }
+
     /**
      * Create a new resource object, from "posted" parameters
      *
-     * @return ResponseInterface
+     * @return mixed
      */
     public function create()
     {
@@ -89,12 +127,21 @@ class ProductController extends ResourceController
             'description' => ['label' => 'Description', 'rules' => 'required'],
         ];
 
+        // Setting pesan error validasi
+        $message = [
+            'name' => ['required' => 'please fill the {field} field'],
+            'status' => [
+                'required' => 'please fill the {field} field',
+                'in_list' => 'Choose one from {field}'
+            ]
+        ];
+
         /* 
             Jika validasi gagal akan redirect ke halaman form input data product 
             dengan mengirim pesan error dan input terakhir user. 
             simpan data tidak akan dilanjutkan
         */
-        if (!$this->validate($rules)) {
+        if (!$this->validate($rules, $message)) {
             return redirect()->back()->withInput();
         }
 
@@ -107,37 +154,117 @@ class ProductController extends ResourceController
 
         $image->move('img/uploads', $filename); // Upload gambar ke folder img/uploads
 
-        return "data saved";
-        // return redirect()->to('admin/product')->with('message', 'Product has been added');
+        return redirect()->to('admin/product')->with('message', 'Product has been added');
     }
 
     /**
      * Return the editable properties of a resource object
      *
-     * @return ResponseInterface
+     * @return mixed
      */
     public function edit($id = null)
     {
-        //
+        $product = $this->productModel->find($id);
+        $categoryModel = new \App\Models\CategoryModel();
+        $categories = $categoryModel->findAll();
+
+        $data = [
+            'product' => $product,
+            'categories' => $categories,
+        ];
+
+        return view('admin/product/edit', $data);
     }
 
     /**
      * Add or update a model resource, from "posted" properties
      *
-     * @return ResponseInterface
+     * @return mixed
      */
     public function update($id = null)
     {
-        //
+        $image = $this->request->getFile('image');
+
+        // Setting rule untuk validasi request input
+        $rules = [
+            'category_id' => ['label' => 'Category', 'rules' => 'required'],
+            'name' => ['label' => 'Name', 'rules' => 'required'],
+            'price' => ['label' => 'Price', 'rules' => 'required'],
+            'sku' => ['label' => 'SKU', 'rules' => 'required'],
+            'status' => ['label' => 'Status', 'rules' => 'required|in_list[active,inactive]'],
+            'description' => ['label' => 'Description', 'rules' => 'required'],
+        ];
+
+        /**
+         * Cek, upload gambar / ganti gambar atau tidak
+         * jika upload, akan diberi rules validasi
+         */
+        if ($image->isValid()) {
+            $rules['image'] = [
+                'label' => 'Image',
+                'rules' => [
+                    'uploaded[image]',
+                    'is_image[image]',
+                    'mime_in[image,image/jpg,image/jpeg,image/gif,image/png,image/webp]'
+                ]
+            ];
+
+            // Ambil nilai input oldImage untuk hapus file
+            $oldImage = $this->request->getVar('oldImage');
+        }
+
+        // Setting pesan error validasi
+        $message = [
+            'name' => ['required' => 'please fill the {field} field'],
+            'status' => [
+                'required' => 'please fill the {field} field',
+                'in_list' => 'Choose one from {field}'
+            ]
+        ];
+        if (!$this->validate($rules, $message)) {
+            return redirect()->back()->withInput();
+        }
+
+        $data = $this->request->getVar(); // Ambil semua nilai dari input form
+
+        // Jika upload gambar baru
+        if ($image->isValid()) {
+            // Generate nama file gambar
+            $filename = $image->getRandomName();
+
+            // Isi nilai image berdasarkan generate nama file
+            $data['image'] = $filename;
+
+            // Hapus file / gambar lama jika ganti gambar
+            unlink('img/uploads/' . $oldImage);
+
+            // Upload gambar baru ke folder img/uploads
+            $image->move('img/uploads', $filename);
+        }
+
+        $this->productModel->update($id, $data); // Update data ke database
+
+        return redirect()->to('admin/product')->with('message', 'Product has been updated');
     }
 
     /**
      * Delete the designated resource object from the model
      *
-     * @return ResponseInterface
+     * @return mixed
      */
     public function delete($id = null)
     {
-        //
+        $product = $this->productModel->find($id);
+
+        // Ambil nama gambar lama dari tabel product
+        $oldImage = $product['image'];
+
+        // Hapus file / gambar lama
+        unlink('img/uploads/' . $oldImage);
+
+        // Hapus data dari database
+        $this->productModel->delete($id);
+
+        return redirect('admin/product')->with('message', 'Product has been deleted');
     }
 }
