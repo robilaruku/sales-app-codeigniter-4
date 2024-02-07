@@ -24,7 +24,7 @@ class ProductController extends ResourceController
     public function index()
     {
         // Variabel $perPage untuk setting banyak data per halaman
-        $perPage = 5;
+        $perPage = 1;
 
         /**
          * Ambil nilai search dan filter product
@@ -60,12 +60,23 @@ class ProductController extends ResourceController
         $categoryModel = new \App\Models\CategoryModel();
         $categories = $categoryModel->findAll();
 
+
+        // Ambil data halaman
+        $currentPage = $pager->getCurrentPage();
+
+        // Ambil total data
+        $perPage = $pager->getPerPage();
+
+        // Ambil nomor awal
+        $startNumber = ($currentPage - 1) * $perPage + 1;
+
         $data = [
             'products' => $products,
             'pager' => $pager,
             'categories' => $categories,
             'category_id' => $category_id,
-            'search' => $search
+            'search' => $search,
+            'startNumber' => $startNumber
         ];
 
 
@@ -92,10 +103,16 @@ class ProductController extends ResourceController
 
     public function show($id = null)
     {
+        $productId = $this->productModel->find($id);
+
+        if (!$productId) {
+            return redirect()->to('/admin/product')->with('error', 'Product Not Found');
+        }
+
         $builder = $this->productModel->builder();
         $builder->select('products.*, c.name category_name');
         $builder->join('categories c', 'products.category_id = c.id');
-        $builder->where('products.id', $id);
+        $builder->where('products.id', $productId['id']);
         $product = $builder->get();
         $product = $product->getRowArray();
 
@@ -165,7 +182,12 @@ class ProductController extends ResourceController
     public function edit($id = null)
     {
         $product = $this->productModel->find($id);
-        $categoryModel = new \App\Models\CategoryModel();
+
+        if (!$product) {
+            return redirect()->to('/admin/product')->with('error', 'Product Not Found');
+        }
+
+        $categoryModel = new CategoryModel();
         $categories = $categoryModel->findAll();
 
         $data = [
@@ -184,6 +206,12 @@ class ProductController extends ResourceController
     public function update($id = null)
     {
         $image = $this->request->getFile('image');
+
+        $product = $this->productModel->find($id);
+
+        if (!$product) {
+            return redirect()->to('/admin/product')->with('error', 'Product Not Found');
+        }
 
         // Setting rule untuk validasi request input
         $rules = [
@@ -213,15 +241,7 @@ class ProductController extends ResourceController
             $oldImage = $this->request->getVar('oldImage');
         }
 
-        // Setting pesan error validasi
-        $message = [
-            'name' => ['required' => 'please fill the {field} field'],
-            'status' => [
-                'required' => 'please fill the {field} field',
-                'in_list' => 'Choose one from {field}'
-            ]
-        ];
-        if (!$this->validate($rules, $message)) {
+        if (!$this->validate($rules)) {
             return redirect()->back()->withInput();
         }
 
@@ -242,7 +262,7 @@ class ProductController extends ResourceController
             $image->move('img/uploads', $filename);
         }
 
-        $this->productModel->update($id, $data); // Update data ke database
+        $this->productModel->update($product['id'], $data); // Update data ke database
 
         return redirect()->to('admin/product')->with('message', 'Product has been updated');
     }
@@ -256,6 +276,10 @@ class ProductController extends ResourceController
     {
         $product = $this->productModel->find($id);
 
+        if (!$product) {
+            return redirect()->to('/admin/product')->with('error', 'Product Not Found');
+        }
+
         // Ambil nama gambar lama dari tabel product
         $oldImage = $product['image'];
 
@@ -263,7 +287,7 @@ class ProductController extends ResourceController
         unlink('img/uploads/' . $oldImage);
 
         // Hapus data dari database
-        $this->productModel->delete($id);
+        $this->productModel->delete($product['id']);
 
         return redirect('admin/product')->with('message', 'Product has been deleted');
     }

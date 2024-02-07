@@ -12,10 +12,11 @@ Product
                 <a href="<?= base_url('admin/product/new'); ?>" class="btn badge text-decoration-none ms-auto">
                     <i data-feather="plus"></i>&nbsp; Add
                 </a>
+
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <div class="mb-3">
                             <label for="category_id" class="form-label">Category</label>
                             <select name="category_id" id="category_id" class="form-select">
@@ -28,11 +29,18 @@ Product
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <div class="mb-3">
                             <label for="search" class="form-label">Search</label>
                             <input type="text" name="search" id="search" class="form-control"
                                 placeholder="Enter keyword" value="<?= $search ?? null ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div style="margin-top: 30px;">
+                            <a href="<?= base_url('admin/product'); ?>" class="btn btn-secondary d-grid">
+                                Reset
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -47,7 +55,7 @@ Product
                 <?php endif; ?>
                 <?php if (session()->get('error')):
                     ; ?>
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <label>
                             <?= session('error'); ?>
                         </label>
@@ -75,7 +83,7 @@ Product
                                     ?>
                                     <tr>
                                         <td class="text-center">
-                                            <?= $x + 1; ?>
+                                            <?= $startNumber + $x; ?>
                                         </td>
                                         <td>
                                             <?= $product['category_name']; ?>
@@ -126,27 +134,29 @@ Product
         </div>
     </div>
 </div>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
-    $(document).ready(function () {
+    document.addEventListener('DOMContentLoaded', function () {
         function filter() {
-            var category_id = $('#category_id').val();
-            var search = $('#search').val();
+            var category_id = document.getElementById('category_id').value;
+            var search = document.getElementById('search').value;
             var base_url = '<?= base_url('admin/product') ?>';
             var url = base_url + '?category_id=' + category_id + '&search=' + search;
 
             window.location.replace(url);
         }
 
-        $('#category_id').on('change', function () {
+        document.getElementById('category_id').addEventListener('change', function () {
             filter();
         });
 
-        $('#search').keypress(function (event) {
-            if (event.keyCode == 13) {
+        document.getElementById('search').addEventListener('keypress', function (event) {
+            if (event.keyCode === 13) {
                 filter();
             }
         });
     });
 </script>
+
 <?= $this->endSection(); ?>
+
+

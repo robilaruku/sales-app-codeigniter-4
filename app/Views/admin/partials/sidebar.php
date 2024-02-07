@@ -31,6 +31,11 @@
                     <i class="align-middle" data-feather="dollar-sign"></i> <span class="align-middle">Sales</span>
                 </a>
             </li>
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="<?= base_url('auth/logout'); ?>">
+                    <i class="align-middle" data-feather="log-out"></i> <span class="align-middle">Sign Out</span>
+                </a>
+            </li>
         </ul>
     </div>
 </nav>
