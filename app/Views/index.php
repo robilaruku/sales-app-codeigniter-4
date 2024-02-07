@@ -15,11 +15,11 @@
 
     <link rel="canonical" href="https://demo-basic.adminkit.io/pages-sign-in.html" />
 
-    <title>Sign In | AdminKit Demo</title>
+    <title>Sign In</title>
 
     <!-- Bootstrap 5 -->
 	<link rel="stylesheet" href="<?= base_url('css/bootstrap.min.css'); ?>">
-
+ 
     <link href="<?= base_url(); ?>/css/app.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>

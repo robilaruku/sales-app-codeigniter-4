@@ -50,7 +50,7 @@ class ProductController extends ResourceController
             $productModel->where('products.category_id', $category_id);
         }
         if (!empty($search)) {
-            $productModel->like('products.name', $search, 'both');
+            $productModel->orLike('products.name', $search, 'both');
         }
 
         $products = $productModel->paginate($perPage);

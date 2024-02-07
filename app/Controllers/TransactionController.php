@@ -25,6 +25,9 @@ class TransactionController extends BaseController
             $transactionModel->where('transactions.product_id', $product_id);
         }
         if (!empty($trx_date)) {
+            
+            $trx_date = date('Y-m-d', strtotime($trx_date));
+
             $transactionModel->where('transactions.trx_date', $trx_date);
         }
 
